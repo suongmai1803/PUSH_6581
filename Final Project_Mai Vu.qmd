@@ -1,0 +1,231 @@
+---
+title: "Final Project"
+author: "Mai Vu"
+format: html
+editor: visual
+---
+
+# 1. Introduction
+
+> The goal of this project is to analyze a biological dataset on Dr. Klopper's github called "ProjectData.csv". This dataset contains patients level information such as age, blood pressure, CRP levels, weight, treatment groups, survey score, and side effects.
+
+> The obejectives of this analysis is are to:
+
+> 1.  Summarize and visualize the main variable in the dataset.
+
+> 2.  Compare groups (e.g., Group I vs. Group II)
+
+> 3.  Explore associations betwwen key variables (e.g., CRP vs. Differences , SideEffects vs. Group).
+
+> 4.  Practice tidyverse-based workflows and ggplot2 visualizations, as covered in lectures.
+
+# 2. Methods
+
+> **2.1 Data Source:** The dataset ("ProjectData.csv") contains 500 obervations acrioss 8 variables:
+
+> **Age**: years
+
+> **Differences**: numeric value, e.g., before/after measurment change
+
+> **CRP**: C-relatuve protein, mg/L
+
+> **Group**: categorical variable with two levels: Group I and Group II
+
+> **sBP**: systoloic blood pressure, mmHg
+
+> **Weight**: weight of participant
+
+> **SideEffects**: categorical variable with two levels: Yes and No
+
+> **Survey**: survey score, integer scale
+
+> **2.2 Software**
+
+> All anaylysis was performed using **RStudio** using the **Quarto** framework to produce a reproducible report.
+
+> The following R libraries were used:
+
+> **tidyverse**: for data manipulation and visualization
+
+> **psych**: descriptive statistics
+
+> **ggplot2**: data visualization
+
+> **RColorBrewer**: color palettes for visualizations
+
+> **2.3 Data Cleaning**
+
+> Imported the dataset using 'read::read_csv()' fucntion.
+
+> Converted **Group** and **SideEffects** into factor variables.
+
+> Converted **Group** and **SideEffects** into factor variables.
+
+> Checked for missing values using 'is.na()' and summarize missigness.
+
+> Ensured that data followed **tidy principles** (each variable in a column, each observation in a row).
+
+> **2.4 Statistical Analysis**
+
+> 1.  **Descriptive statistics:** calculated mean, median, standard deviation, and range for continuous variables using 'psych::describe()'.
+
+> 2.  **Visualization:** created histograms (for Age and CRP), boxplots (Groups and Side Effects), and scatter plots using 'ggplot2' to visualize distributions and relationships (Age vs. sBP, CRP vs. Differences).
+
+# 3. Results
+
+> 3.1 Read the data
+
+```{r}
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(psych)
+library(ggplot2)
+library(ggthemes)
+library(RColorBrewer)
+data<-readr::read_csv("ProjectData.csv")
+data
+```
+
+> 3.2 Data Cleaning
+
+```{r}
+data <- data %>%
+  mutate(
+    Group = as.factor(Group),
+    SideEffects = as.factor(SideEffects)
+  )
+data
+```
+
+> 3.3 Descriptive Statistics
+
+```{r}
+# Overall descriptive summary of all variables
+summary(data)
+
+# Frequency counts for categorial varoiables
+table(data$Group)
+table(data$SideEffects)
+
+# mean, SD, min, max, skew, etc for numaric variables
+psych::describe(data %>% select(Age, Difference, CRP, sBP, Weight, Survey))
+
+# Compare numeric variables by Group with tydyverse
+data %>%
+  group_by(Group) %>%
+  summarise(
+    mean_Age = mean(Age, na.rm = TRUE),
+    sd_Age = sd(Age, na.rm = TRUE),
+    mean_Difference = mean(Difference, na.rm = TRUE),
+    sd_Difference = sd(Difference, na.rm = TRUE),
+    mean_CRP = mean(CRP, na.rm = TRUE),
+    sd_CRP = sd(CRP, na.rm = TRUE),
+    mean_sBP = mean(sBP, na.rm = TRUE),
+    sd_sBP = sd(sBP, na.rm = TRUE)
+  )
+# Crossstabulation of SideEffects by Group
+table(data$SideEffects, data$Group)
+prop.table(table(data$SideEffects, data$Group), margin = 1) # Add proportions
+```
+
+> **Results**
+
+> The dataset contains **500 participants**
+
+> -   **Age**: Mean = 58.38 years, SD = 11.73 years, range 38-85 years
+
+> -   Mean **CRP** = 7.46 mg/L, SD = 1.02 mg/L, range 4.5-10.6 mg/L
+
+> -   Avg **sBP** = 124.52 mmHg, SD = 10.25 mmHg
+
+> -   Mean **weight** = 172.26 lbs, SD = 37.05 lbs
+
+> -   Outcome variable **Differences**: Mean = 0.05, SD = 0.96
+
+> -   **Group**: **251** in Group I, **249** in Group II
+
+> -   **SideEffects**: **289** reported **no** side effects, **211** reported **Yes** side effects
+
+> -   **Survey scores:** median = 3 (out of 5), range = 1-5
+
+> 3.4 Visualizations
+
+```{r}
+# First I would like to see the distribution of Age.
+ggplot(data, aes(x = Age)) +
+  geom_histogram(binwidth = 5, fill = "pink", color = "black") +
+  labs(title = "Distribution of Age", x = "Age (years)", y = "Frequency") +
+  ggthemes::theme_economist()
+
+# Next I would like to see the CRP vs. Differences colored by Group
+ggplot(data, aes(x = CRP, y = Difference, color = Group)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "CRP vs. Difference by Group", x = "CRP (mg/L)", y = "Difference") +
+  ggthemes::theme_economist()
+
+# Then I would like the sBP by Group
+ggplot(data, aes(x = Group, y = sBP, fill = Group)) +
+  geom_violin(trim = FALSE, alpha = 0.6) +
+  geom_boxplot(width = 0.1, fill = "white") +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Systolic Blood Pressure by Group",
+    x = "Group",
+    y = "sBP (mmHg)"
+  ) +
+  ggthemes::theme_economist()
+
+# I would also like to see the distribution of Survey scores
+ggplot(data, aes(x = factor(Survey), fill = factor(Survey))) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Blues") +
+  labs(
+    title = "Survey Score Distribution",
+    x = "Survey Score",
+    y = "Count"
+  ) +
+  ggthemes::theme_economist()
+
+# I would like to see proportion of Side Effects by Group
+ggplot(data, aes(x = Group, fill = SideEffects)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Proportion of Side Effects by Group",
+    x = "Group",
+    y = "Proportion",
+    fill = "Side Effects"
+  ) +
+  ggthemes::theme_excel_new()
+
+# Finally, I would like to see CRP by SideEffects across Groups
+ggplot(data, aes(x = SideEffects, y = CRP, fill = SideEffects)) +
+  geom_boxplot() +
+  facet_wrap(~ Group) +
+  labs(
+    title = "CRP by SideEffects across Groups",
+    x = "Side Effects",
+    y = "CRP (mg/L)"
+  ) +
+  scale_fill_brewer(palette = "Set1") +
+  theme_classic()
+```
+
+> **Based on the visualizations:**
+
+> -   The age distribution is approximately normal, centered around 58 years.
+
+> -   There is a positive correlation between CRP levels and Differences, with Group II showing a slightly steeper trend.
+
+> -   Systolic blood pressure (sBP) appears slightly higher in Group II compared to Group I.
+
+> -   Survey scores are skewed towards higher values, with most participants rating 4 or 5.
+
+> -   The proportion of participants reporting side effects is higher in Group II compared to Group I.
+
+> -   CRP levels tend to be higher in participants reporting side effects, especially in Group II.
+
+# 4. Discussion and conclusion
+
+> This analysis of the "ProjectData.csv" dataset provided insights into the characteristics and outcomes of 500 participants across two treatment groups. Descriptive statistics revealed that the average age was approximately 58 years, with a mean CRP level of 7.46 mg/L and an average systolic blood pressure of 124.52 mmHg. The outcome variable, Differences, had a mean close to zero, indicating minimal overall change. Visualizations highlighted key patterns, such as a positive correlation between CRP levels and Differences, with Group II exhibiting a slightly stronger relationship. Additionally, Group II had a higher average systolic blood pressure and a greater proportion of participants reporting side effects compared to Group I. These findings suggest potential differences in treatment effects and side effect profiles between the two groups. The higher CRP levels observed in participants reporting side effects, particularly in Group II, may indicate an inflammatory response associated with the treatment. Overall, this analysis underscores the importance of considering both clinical outcomes and patient-reported experiences when evaluating treatment efficacy. Future research could further explore the underlying mechanisms driving these differences and assess long-term outcomes associated with each treatment group.
